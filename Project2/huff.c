@@ -20,55 +20,33 @@ typedef struct hnode
 } huffNode;
 
 
-int main()
+huffNode * createNode(char key, int val)
 {
-	char tmp;
-	int counts[257] = {0}; //declare counts array and init to 0's
-	
-	FILE * fp = fopen("input.txt","r"); //declare file pointer
-
-	
-	
-	do
+    //error check
+	if (val < 0)
 	{
-		tmp = (char)fgetc(fp); //read single char from file 
-		if(tmp != EOF)
-		{
-			counts[(int)tmp] = counts[(int)tmp] + 1; //incr corresponding char count...
-			
-			//----------------------------------------
-			if(DEBUG)
-			{
-				printf("%d ",tmp);
-				printf("\n\n");			
-			}
-			//----------------------------------------
-		}
-	}while(tmp != EOF); //...until EOF is encountered
-	
-	counts[256] = 1; //pseodo-EOF char - set count to 1
-	
-	
-	//---------------------------------------------------------
-	int i;
-	if (DEBUG)
-	{
-		for(i = 0; i < 256; i++)
-		{	
-			if(counts[i] > 0)
-			{
-				printf("%d = %d\n",i, counts[i]);
-			}
-		}
-	printf("%c = %d\n",(char)i, counts[i]);
+		fprintf(stderr, "\nERROR!! Negative count !\n");
+		return NULL;
 	}
-	//---------------------------------------------------------
-	
-	
-	fclose(fp);
-	 
-	return 0;
+
+	//allocate space for new node
+	huffNode* node = (huffNode*)malloc(sizeof(huffNode));
+
+    if (NULL == node)
+    {
+    	fprintf(stderr, "\nERROR !!! Malloc failed !\n");
+    	return node;
+    } 
+
+    //initialize newly allocated node
+	node->key = key;
+	node->val = val;
+	node->left = NULL;
+	node->right = NULL;
+
+	return node;
 }
+
 
 /*----------------PRIORITY QUEUE-----------------------------
 	Here for a starting point, i have implemented the PQ as an array,
@@ -88,24 +66,129 @@ int main()
 	-> Cannot enqueue when count = MAX_PQ_SIZE
 */	
 	
-typedef struct priorityQueue{
+typedef struct pQueue{
 	
-	int count;
-	huffNode* buff[MAX_PQ_SIZE];
+	int count; //current number of elements
+	huffNode** buff; //pointer to an array of huffNodes
 }pQueue;
 	
-	/* 
-void enqueue(pQueue PQ, huffNode* nodePtr)
+	
+pQueue* createPqueue()
 {
-	//error check - abort if PQ is full
-	if(PQ->count == MAX_PQ_COUNT)
+	pQueue* PQ = (pQueue*)malloc(sizeof(pQueue)); //allocate space for PQ on heap
+	 
+	PQ->count = 0; //init count
+	PQ->buff = (huffNode**)malloc(MAX_PQ_SIZE * sizeof(huffNode)); //allocate space for array of nodePtrs on heap
+	
+	return PQ;
+}
+
+	
+void enqueue(pQueue * pQueue, huffNode* nodePtr)
+{
+	//error check - abort if pQueue is full
+	if(pQueue->count == MAX_PQ_SIZE)
 	{
 		fprintf(stderr,"ERROR! Cannot enqueue beacuse priority queue is full!");
 		return;
 	}
 
+	int count = pQueue->count; //number of elements currently in pQueue
+	int newVal = nodePtr->val; //the character count of the new nodePtr added to pQueue 
+	int val; //count of an existing element in pQueue used to compare with pQueue
+	
+	int newIndex = count; //init newIndex 
+	
+	//find right place for new nodePtr in pQueue
+	val= pQueue->buff[newIndex-1]->val; //init to last element in queue
+	while(val < newVal)
+	{
+		newIndex--;
+		val= pQueue->buff[newIndex-1]->val;
+	} 
+	
+	//move elements in queue to right to make room for new nodePtr  
+	int i;
+	for(i = newIndex; i < count; i++) //wont run at all if newIndex has not been decremented(which only happens when newval is lowest in pQueue)
+	{
+		pQueue->buff[newIndex+1] = pQueue->buff[newIndex];
+	}
+	
+	//copy new nodePtr to right place
+	pQueue->buff[newIndex] = nodePtr;
+	
+	//incr count
+	pQueue->count = (pQueue->count) + 1; 
 }
 	
-*/	
+
+
+
+
+
+int main()
+{
+	char tmp;
+	int counts[257] = {0}; //declare counts array and init to 0's
+	
+	FILE* fp = fopen("input.txt","r"); //declare file pointer
+
+	do
+	{
+		tmp = (char)fgetc(fp); //read single char from file 
+		if(tmp != EOF)
+		{
+			counts[(int)tmp] = counts[(int)tmp] + 1; //incr corresponding char count...
+			
+			/*----------------------------------------
+			if(DEBUG)
+			{
+				printf("%d ",tmp);
+				printf("\n\n");			
+			}
+			//----------------------------------------*/
+		}
+	}while(tmp != EOF); //...until EOF is encountered
+	
+	counts[256] = 1; //pseodo-EOF char - set count to 1
+	
+	huffNode* tmpPtr;
+	
+	//Declare Priority Queue
+	pQueue* PQ = createPqueue();
+	
+	
+	int i;
+	for(i = 0; i < 256; i++)
+	{	
+		if(counts[i] > 0)
+		{
+			//--------------------------------------------------
+			if(DEBUG)
+			{
+				printf("%c = %d\n",i, counts[i]);
+			}
+			//--------------------------------------------------
+			
+			//for every nonzero char count, create a huffman node and enqueue it 
+			//tmpPtr = createNode(i, counts[i]);  
+			//enqueue(PQ, tmpPtr); 
+	}
+
+	}
+		printf("pseudo-EOF = %d\n", counts[i]);
+		//create huffNode for pseudo EOF
+		
+		//enqueue pseudo EOF; 
+		
+		
+		
+	
+	fclose(fp);
+	 
+	return 0;
 }
+
+
+
 
