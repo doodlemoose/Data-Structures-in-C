@@ -92,26 +92,57 @@ void enqueue(pQueue * pQueue, huffNode* nodePtr)
 		fprintf(stderr,"ERROR! Cannot enqueue beacuse priority queue is full!");
 		return;
 	}
-
+		
 	int count = pQueue->count; //number of elements currently in pQueue
 	int newVal = nodePtr->val; //the character count of the new nodePtr added to pQueue 
 	int val; //count of an existing element in pQueue used to compare with pQueue
 	
 	int newIndex = count; //init newIndex 
 	
-	//find right place for new nodePtr in pQueue
-	val= pQueue->buff[newIndex-1]->val; //init to last element in queue
-	while(val < newVal)
+	//-----------------------------------------
+	if(DEBUG) 
 	{
-		newIndex--;
-		val= pQueue->buff[newIndex-1]->val;
-	} 
+		printf("newVal = %d  ",nodePtr->val);
+		printf("count = %d\n",count);
+	}
+	//-------------------------------------------
 	
-	//move elements in queue to right to make room for new nodePtr  
-	int i;
-	for(i = newIndex; i < count; i++) //wont run at all if newIndex has not been decremented(which only happens when newval is lowest in pQueue)
+	if(count > 0)
 	{
-		pQueue->buff[newIndex+1] = pQueue->buff[newIndex];
+		//printf("newIndex = %d ",newIndex);
+		
+		//find right place for new nodePtr in pQueue
+		//val= pQueue->buff[newIndex-1]->val; //init to last element in queue
+		//huffNode* tmp = pQueue->buff[newIndex-1];
+		//if(tmp == NULL)
+		//{
+		//	fprintf(stderr,"ERROR! pQueue->buff[newIndex-1] = NULL ! ");  
+		//}
+		
+		//val = tmp->val;
+	
+		
+		
+		do
+		{
+			printf("hello from inside while loop\n");
+			if(count==4) printf("[newIndex-1] = %d , buff[newIndex-1] = %p\n",newIndex-1,pQueue->buff[newIndex-1]);
+			
+			val= pQueue->buff[newIndex-1]->val;
+			newIndex--;
+
+			//------------------------------------------
+			//printf("val = %d, newval = %d\n",val,newVal);
+			//------------------------------------------ 
+		}while((val < newVal) && (newIndex > 0)); 
+	
+
+		//move elements in queue to right to make room for new nodePtr  
+		int i;
+		for(i = newIndex; i < count; i++) //wont run at all if newIndex has not been decremented(which only happens when newval is lowest in pQueue)
+		{
+			pQueue->buff[newIndex+1] = pQueue->buff[newIndex];
+		}
 	}
 	
 	//copy new nodePtr to right place
@@ -119,6 +150,8 @@ void enqueue(pQueue * pQueue, huffNode* nodePtr)
 	
 	//incr count
 	pQueue->count = (pQueue->count) + 1; 
+
+	
 }
 	
 
@@ -158,24 +191,36 @@ int main()
 	pQueue* PQ = createPqueue();
 	
 	
-	int i;
+	int i,j;
 	for(i = 0; i < 256; i++)
 	{	
 		if(counts[i] > 0)
 		{
-			//--------------------------------------------------
+			/*--------------------------------------------------
 			if(DEBUG)
 			{
-				printf("%c = %d\n",i, counts[i]);
+				printf("%c = %d \n",i, counts[i]);
 			}
-			//--------------------------------------------------
+			//--------------------------------------------------*/
 			
 			//for every nonzero char count, create a huffman node and enqueue it 
-			//tmpPtr = createNode(i, counts[i]);  
-			//enqueue(PQ, tmpPtr); 
+			tmpPtr = createNode(i, counts[i]);  
+			//printf("%d\n",tmpPtr->val);
+			
+			enqueue(PQ, tmpPtr);
+			
+			printf("count = %d",PQ->count);
+			for(j=0 ;j < (PQ->count);j++)
+			{
+				printf("\nj = %d ",j);
+				//printf("%c,%d is at index %d, ",PQ->buff[j]->key,PQ->buff[j]->val, j);
+			}
+			printf("\n");
 	}
 
 	}
+		
+		
 		printf("pseudo-EOF = %d\n", counts[i]);
 		//create huffNode for pseudo EOF
 		
