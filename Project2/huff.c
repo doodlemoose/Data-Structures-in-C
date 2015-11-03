@@ -84,7 +84,7 @@ pQueue* createPqueue()
 }
 
 	
-void enqueue(pQueue * pQueue, huffNode* nodePtr)
+void enqueue(pQueue* pQueue, huffNode* nodePtr)
 {
 	//error check - abort if pQueue is full
 	if(pQueue->count == MAX_PQ_SIZE)
@@ -139,14 +139,32 @@ void enqueue(pQueue * pQueue, huffNode* nodePtr)
 }
 	
 
+huffNode* dequeue(pQueue* pQueue)
+{
+	//error check
+	if(pQueue->count == 0)
+	{
+		fprintf(stderr,"ERROR! cannot dequeue because pQueue is empty!");
+		return NULL;
+	}
+	
+	int index = (pQueue->count) - 1; //index in pQueue of element to be dequeued 
+	
+	//get node to be dequeued
+	huffNode* tmp = pQueue->buff[index];
+	
+	//decrement count
+	pQueue->count = pQueue->count - 1;
 
+	return tmp;
+}
 
-int main()
+int main(int argc, char** argv)
 {
 	char tmp;
 	int counts[257] = {0}; //declare counts array and init to 0's
 	
-	FILE* fp = fopen("input.txt","r"); //declare file pointer
+	FILE* fp = fopen(argv[1],"r"); //declare file pointer, open input file
 
 	do
 	{
@@ -194,7 +212,7 @@ int main()
 		}//if
 	}//for
 		
-		//printf("\nafter adding...");
+	printf("\nafter enqueing...");
 	printf("\ncount = %d",PQ->count);
 	for(j=0 ;j < (PQ->count);j++)
 	{
@@ -204,13 +222,31 @@ int main()
 	}
 	printf("\n\n");
 		
-	printf("pseudo-EOF = %d\n", counts[i]);
+		
+	for(j = 0; j < 85; j++)
+	{
+		dequeue(PQ);
+	}	
+	
+		
+	printf("\nafter dequeing...");
+	printf("\ncount = %d",PQ->count);
+	for(j=0 ;j < (PQ->count);j++)
+	{
+		//printf("\nj = %d ",j);
+		//printf("\n%p is at index %d, ",PQ->buff[j],j);
+		printf("\n%c,%d is at index %d, ",PQ->buff[j]->key,PQ->buff[j]->val, j);
+	}
+	printf("\n\n");
+		
+		
+	//printf("pseudo-EOF = %d\n", counts[i]);
 	//create huffNode for pseudo EOF
 		
 	//enqueue pseudo EOF; 
 		
-		
-		
+	
+	
 	
 	fclose(fp);
 	 
