@@ -161,6 +161,8 @@ huffNode* dequeue(pQueue* pQueue)
 
 int main(int argc, char** argv)
 {
+	//===============================================================
+	//-------BUILD CHARACTER COUNTS TABLE---------------------------- 
 	char tmp;
 	int counts[257] = {0}; //declare counts array and init to 0's
 	
@@ -184,13 +186,13 @@ int main(int argc, char** argv)
 	}while(tmp != EOF); //...until EOF is encountered
 	
 	counts[256] = 1; //pseodo-EOF char - set count to 1
+	//----------------------------------------------------------------
+	//===============================================================
+	//=============================================================
+	//-------------BUILD FOREST OF TREES----------------------------
 	
+	pQueue* PQ = createPqueue(); //Declare Priority Queue
 	huffNode* tmpPtr;
-	
-	//Declare Priority Queue
-	pQueue* PQ = createPqueue();
-	
-	
 	int i,j;
 	for(i = 0; i < 256; i++)
 	{	
@@ -211,7 +213,52 @@ int main(int argc, char** argv)
 			
 		}//if
 	}//for
+	
+
+	printf("pseudo-EOF = %d\n", counts[256]);
+	//create huffNode for pseudo EOF
+	huffNode* eofNode = createNode(0,counts[256]); 	
 		
+	//enqueue pseudo EOF; 
+	enqueue(PQ,eofNode);
+	
+	printf("%c\n",dequeue(PQ)->key);
+	
+	//Now forest of one-node trees is complete and we can start to build huffMan tree
+	
+	//----------------------------------------------------------------------------
+	//=============================================================================
+	//======================================================================
+	//-----------BUILD HUFFMAN TREE USING GREEDY ALGORITHM------------------
+	
+	
+	
+	
+	
+	//-----------------------------------------------------------------------
+	//=======================================================================	
+	//====================================================================
+	//-------------BUILD HUFFMAN TABLE-----------------------------------
+	
+	//..remember to free huffman tree after building table
+	
+	//--------------------------------------------------------------------
+	//====================================================================
+	//======================================================================
+	//---------WRITE ENCODED OUTPUT TO COMPRESSED FILE------------------------
+	
+	
+		
+	fclose(fp);
+	//-----------------------------------------------------------------------
+	//====================================================================
+
+	 
+	return 0;
+}
+
+
+	/*	
 	printf("\nafter enqueing...");
 	printf("\ncount = %d",PQ->count);
 	for(j=0 ;j < (PQ->count);j++)
@@ -227,7 +274,6 @@ int main(int argc, char** argv)
 	{
 		dequeue(PQ);
 	}	
-	
 		
 	printf("\nafter dequeing...");
 	printf("\ncount = %d",PQ->count);
@@ -238,20 +284,8 @@ int main(int argc, char** argv)
 		printf("\n%c,%d is at index %d, ",PQ->buff[j]->key,PQ->buff[j]->val, j);
 	}
 	printf("\n\n");
-		
-		
-	//printf("pseudo-EOF = %d\n", counts[i]);
-	//create huffNode for pseudo EOF
-		
-	//enqueue pseudo EOF; 
-		
 	
-	
-	
-	fclose(fp);
-	 
-	return 0;
-}
+	*/	
 
 
 
