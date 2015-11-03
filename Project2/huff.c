@@ -4,7 +4,7 @@
 
 #define DEBUG 1
 #define MAX_PQ_SIZE 260 //count when PQ is full  	
-
+#define PATH_SIZE 257
 
 
 
@@ -179,6 +179,29 @@ void preOrder(huffNode* root)
 	preOrder(root->right);
 }
 
+int getPath(char key, huffNode* root, char* path, int i)
+{
+	/* This function return the encoding(path) of a leaf node in a huffman tree as a string of 0's and 1's*/
+	if(root == NULL) return 0;
+	if((root->left == NULL) && (root->right == NULL) && (root->key == key)) return 1;
+	if ((root->left == NULL) && (root->right == NULL)) return 0;
+
+	path[i] = '0'; 
+	path[i+1] = '\0';
+	
+	if(getPath(key,root->left,path,i+1)) 
+	{
+		return 1;
+	}
+	else 
+	{
+		path[i] = '1';
+		path[i+1] = '\0';
+	
+		return (getPath(key,root->right,path,i+1));	
+	}
+} 
+
 int main(int argc, char** argv)
 {
 	//===============================================================
@@ -247,19 +270,21 @@ int main(int argc, char** argv)
 	//=============================================================================
 	//======================================================================
 	//-----------BUILD HUFFMAN TREE USING GREEDY ALGORITHM------------------
-	
+
+	/*--------------------------------
+	if(DEBUG)
+	{	
 		printf("\nafter enqueing...");
-	printf("\ncount = %d",PQ->count);
-	for(j=0 ;j < (PQ->count);j++)
-	{
-		//printf("\nj = %d ",j);
-		//printf("\n%p is at index %d, ",PQ->buff[j],j);
-		printf("\n%c,%d is at index %d, ",PQ->buff[j]->key,PQ->buff[j]->val, j);
+		printf("\ncount = %d",PQ->count);
+		for(j=0 ;j < (PQ->count);j++)
+		{
+			//printf("\nj = %d ",j);
+			//printf("\n%p is at index %d, ",PQ->buff[j],j);
+			printf("\n%c,%d is at index %d, ",PQ->buff[j]->key,PQ->buff[j]->val, j);
+		}
+		printf("\n\n");
 	}
-	printf("\n\n");
-			
-			
-			
+	//-------------------------------*/				
 			
 	huffNode* one,*two,*parent;
 	int parentVal;
@@ -275,24 +300,49 @@ int main(int argc, char** argv)
 		parent = createNode(0,parentVal);
 
 		//link parent to the two nodes that were dequeued
-		parent->right = one;
-		parent->left = two;
+		parent->left = one;
+		parent->right = two;
 
 		//enqueue parent
 		enqueue(PQ,parent);
 	}		
-
-	if(PQ->count == 1) printf("\ngetting root..."); 
+ 
 	huffNode* huffRoot = dequeue(PQ);
-	if(PQ->count == 0) printf("\nobtained root for huffman tree"); 
-	//---pre-order traversal
 	
+	//---pre-order traversal
 	preOrder(huffRoot);
 	
 	//-----------------------------------------------------------------------
 	//=======================================================================	
 	//====================================================================
 	//-------------BUILD HUFFMAN TABLE-----------------------------------
+	
+	//declare space on stack for huffman table, implemented as array of strings(array of pointers to char)
+	char* huffTable[257];
+	int k;
+	//each pointer element in table points to a string on the heap
+	for(k = 0;k<257;k++)
+	{
+		huffTable[k] = (char*)malloc(PATH_SIZE*sizeof(char));
+	}
+	
+	//parse through char counts table and fill in the corresponding string in huffman table (for non-zero counts) 
+	
+	for(k = 0; k<257; k++)
+	{
+		if(counts[k] > 0)
+		{
+			getPath((char)k, huffRoot, huffTable[k], 0);
+		}
+	}
+
+	for(k = 0; k<257; k++)
+	{
+		if(counts[k] > 0)
+		{
+			printf("path to %c is %s\n",k,huffTable[k]);
+		}
+	}
 	
 	//..remember to free huffman tree after building table
 	
