@@ -159,6 +159,26 @@ huffNode* dequeue(pQueue* pQueue)
 	return tmp;
 }
 
+
+void preOrder(huffNode* root)
+{
+	//base case
+	if(root==NULL) return;
+
+	//print current node
+	if((root->left== NULL) && (root->right == NULL)) //leaf
+	{
+		printf("[%c, %d]\n", root->key, root->val);;
+		return;
+	}
+	else printf("%d\n",root->val);
+
+	//traverse left
+	preOrder(root->left);
+	//traverse right 
+	preOrder(root->right);
+}
+
 int main(int argc, char** argv)
 {
 	//===============================================================
@@ -215,14 +235,11 @@ int main(int argc, char** argv)
 	}//for
 	
 
-	printf("pseudo-EOF = %d\n", counts[256]);
 	//create huffNode for pseudo EOF
 	huffNode* eofNode = createNode(0,counts[256]); 	
 		
 	//enqueue pseudo EOF; 
 	enqueue(PQ,eofNode);
-	
-	printf("%c\n",dequeue(PQ)->key);
 	
 	//Now forest of one-node trees is complete and we can start to build huffMan tree
 	
@@ -231,9 +248,46 @@ int main(int argc, char** argv)
 	//======================================================================
 	//-----------BUILD HUFFMAN TREE USING GREEDY ALGORITHM------------------
 	
+		printf("\nafter enqueing...");
+	printf("\ncount = %d",PQ->count);
+	for(j=0 ;j < (PQ->count);j++)
+	{
+		//printf("\nj = %d ",j);
+		//printf("\n%p is at index %d, ",PQ->buff[j],j);
+		printf("\n%c,%d is at index %d, ",PQ->buff[j]->key,PQ->buff[j]->val, j);
+	}
+	printf("\n\n");
+			
+			
+			
+			
+	huffNode* one,*two,*parent;
+	int parentVal;
+
+	while(PQ->count > 1)
+	{
+		//dequeue two nodes(dequeue gives us the node with lowest val in pQueue)
+		one = dequeue(PQ);
+		two = dequeue(PQ);
+
+		// create 'parent' node whose val is the sum of the vals of the nodes dequeued
+		parentVal = (one->val) + (two->val);
+		parent = createNode(0,parentVal);
+
+		//link parent to the two nodes that were dequeued
+		parent->right = one;
+		parent->left = two;
+
+		//enqueue parent
+		enqueue(PQ,parent);
+	}		
+
+	if(PQ->count == 1) printf("\ngetting root..."); 
+	huffNode* huffRoot = dequeue(PQ);
+	if(PQ->count == 0) printf("\nobtained root for huffman tree"); 
+	//---pre-order traversal
 	
-	
-	
+	preOrder(huffRoot);
 	
 	//-----------------------------------------------------------------------
 	//=======================================================================	
@@ -258,6 +312,7 @@ int main(int argc, char** argv)
 }
 
 
+
 	/*	
 	printf("\nafter enqueing...");
 	printf("\ncount = %d",PQ->count);
@@ -269,8 +324,9 @@ int main(int argc, char** argv)
 	}
 	printf("\n\n");
 		
+	int size = PQ->count;	
 		
-	for(j = 0; j < 85; j++)
+	for(j = 0; j < size; j++)
 	{
 		dequeue(PQ);
 	}	
