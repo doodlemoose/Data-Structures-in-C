@@ -264,6 +264,8 @@ int main(int argc, char** argv)
 	//enqueue pseudo EOF; 
 	enqueue(PQ,eofNode);
 	
+	int charCount = PQ->count;
+	
 	//Now forest of one-node trees is complete and we can start to build huffMan tree
 	
 	//----------------------------------------------------------------------------
@@ -310,7 +312,7 @@ int main(int argc, char** argv)
 	huffNode* huffRoot = dequeue(PQ);
 	
 	//---pre-order traversal
-	preOrder(huffRoot);
+	//preOrder(huffRoot);
 	
 	//-----------------------------------------------------------------------
 	//=======================================================================	
@@ -336,23 +338,96 @@ int main(int argc, char** argv)
 		}
 	}
 
-	for(k = 0; k<257; k++)
-	{
-		if(counts[k] > 0)
+	/*-----------------------
+	if(DEBUG)
 		{
-			printf("path to %c is %s\n",k,huffTable[k]);
+		for(k = 0; k<257; k++)
+		{
+			if(counts[k] > 0)
+			{
+				printf("path to %c is %s\n",k,huffTable[k]);
+			}
 		}
 	}
+	//----------------------*/
 	
-	//..remember to free huffman tree after building table
+	//free huffman tree
 	
 	//--------------------------------------------------------------------
 	//====================================================================
 	//======================================================================
 	//---------WRITE ENCODED OUTPUT TO COMPRESSED FILE------------------------
 	
+	//open output file
 	
+	FILE* fp2 = fopen("output.txt","wb+");
+	
+	//-----print header - nonzero char-val pairs from character-counts table 
+	//first 4 bytes (int) is the number of char-val pairs
+	//size of char-val pair = 4 bytes + 4bytes = 8ytes (char is stored as int)
+	//size of header = (4 + count*8) bytes
+	int headerSize = 4 + charCount*8;
+	
+	printf("header Size is %d\n",headerSize);
+	//size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+	if((fwrite((void*)&headerSize, sizeof(int), 1, fp2)) != 1)
+	{
+		fprintf(stderr,"ERROR! Header was not written to file!");
+	}
+	
+	//store nonzero pairs from charCounts table
+	for(k = 0; k<257; k++)
+	{
+		if(counts[k] > 0)
+		{
+					
+			if((fwrite((void*)&k, sizeof(int), 1, fp2)) != 1)
+			{
+				fprintf(stderr,"ERROR! Char was not written to file!");
+			};
+			if((fwrite((void*)&counts[k], sizeof(int), 1, fp2)) != 1)
+			{
+				fprintf(stderr,"ERROR! Count was not written to file!");
+			};
+		}
+	}
+	
+	//-----------------------------------
+	//size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+	int testSize;
+	fseek(fp2, SEEK_SET, 0);
+	int numRead = fread((void*)&testSize, sizeof(int), 1, fp2);
+	printf("numRead = %d, testSize is %d\n",numRead, testSize); 
+	
+	for(k = 0; k<charCount; k++)
+	{
 		
+		fread((void*)&testSize, sizeof(int), 1, fp2);
+		printf("%d, char is %d   ",numRead, testSize); 
+	
+		fread((void*)&testSize, sizeof(int), 1, fp2);
+		printf("%d, count is is %d\n",numRead, testSize); 
+	}
+	printf("\n");
+	//-----------------------------*/
+	
+	//---write encoded ouput to compressed file----
+	//get next char from input file
+	
+	//get correspoding path from huffman table
+	
+	//parse path and write to byte buffer
+	
+	//when buffer is full, flush it to compressed file, reset counter and carry on
+	
+	//do this until EOF char is reached
+	
+	//write pseudo-eof char to file  
+	
+	//flush buffer and close file
+	fclose(fp2);
+	
+	//close input file
 	fclose(fp);
 	//-----------------------------------------------------------------------
 	//====================================================================
