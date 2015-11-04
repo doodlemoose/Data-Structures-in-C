@@ -16,10 +16,10 @@ void preOrder(huffNode* root)
 	//print current node
 	if((root->left== NULL) && (root->right == NULL)) //leaf
 	{
-		printf("[%c, %d]\n", root->key, root->val);;
+		//printf("[%c, %d]\n", root->key, root->val);;
 		return;
 	}
-	else printf("%d\n",root->val);
+	//else printf("%d\n",root->val);
 
 	//traverse left
 	preOrder(root->left);
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 		fprintf(stderr,"ERROR! Header not read!"); 
 	}
 	
-	printf("header = %d bytes",headerSize);
+	//printf("header = %d bytes",headerSize);
 
 	
 	
@@ -244,7 +244,7 @@ int main(int argc, char** argv)
 				}
 				else
 				{
-					printf("\n put %c in output file",curr->key);
+					//printf("\n put %c in output file",curr->key);
 				}
 				curr = huffRoot;
 				//printf("\nnow BACK at %d", curr->val);
