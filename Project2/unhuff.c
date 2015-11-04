@@ -22,27 +22,45 @@ int main(int argc, char** argv)
 	}
 	
 	printf("header = %d bytes",headerSize);
-	/*
-	for(k = 0; k<charCount; k++)
-	{
-		
-		fread((void*)&testSize, sizeof(int), 1, fp2);
-		printf("%d, char is %d   ",numRead, testSize); 
-	
-		fread((void*)&testSize, sizeof(int), 1, fp2);
-		printf("%d, count is is %d\n",numRead, testSize); 
-	}
-	printf("\n");
-	//-----------------------------*/
+
 	
 	
 	//parse through char-val pairs and recreate char counts table
 	
+	char tmpChar;
+	int tmpCount;
 	
-	//add pseudo-eof char to counts table
+	int counts[257] = {0}; //declare counts array and init to 0's
+	
+	int k;
+	for(k = 0; k < ((headerSize-4)/5) -1; k++)
+	{
+		if((fread((void*)&tmpChar, sizeof(char), 1, fp)) != 1)
+		{
+			fprintf(stderr,"ERROR! Char was not read from file!");
+		};
+		if((fread((void*)&tmpCount, sizeof(int), 1, fp)) != 1)
+		{
+			fprintf(stderr,"ERROR! Count was not read from file!");
+		};
+		
+		counts[(int)tmpChar] = tmpCount;
+	}
+	
+	/*------------------------------
+	for(k = 0; k < 256; k++)
+	{
+		printf("counts[%c] = %d\n",(char)k,counts[k]); 
+	}
+	printf("\n");
+	//-----------------------------*/
+	
+	//add pseudo-eof char with count = 1 to counts table
+	counts[256] = 1; 
 	
 	
 	//build huffman tree  
+	
 	
 	
 	
