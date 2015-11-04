@@ -362,7 +362,7 @@ int main(int argc, char** argv)
 	
 	FILE* fp2 = fopen("output.txt","wb+");
 	
-	//-----print header - nonzero char-val pairs from character-counts table 
+	/*-----print header - nonzero char-val pairs from character-counts table 
 	//first 4 bytes (int) is the number of char-val pairs
 	//size of char-val pair = 4 bytes + 4bytes = 8ytes (char is stored as int)
 	//size of header = (4 + count*8) bytes
@@ -392,6 +392,8 @@ int main(int argc, char** argv)
 		}
 	}
 	
+	
+	
 	//-----------------------------------
 	//size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 	int testSize;
@@ -412,17 +414,123 @@ int main(int argc, char** argv)
 	//-----------------------------*/
 	
 	//---write encoded ouput to compressed file----
-	//get next char from input file
+
+	char nextChar; //next ASCII char from input file
+	char currPath[PATH_SIZE] = {'\0'};
+	unsigned char buffer = 0b00000000; //bit-buffer used to write to file
+	unsigned char mask = 0b10000000;	//used to write 1's to bit-buffer
+	char digit; //next '0' or '1' from path
+	int n = 0;
 	
-	//get correspoding path from huffman table
+	fseek(fp, SEEK_SET, 0);
+	do 
+	{
+		//get next char from input file
+		nextChar = fgetc(fp);
+		if( feof(fp)) 
+		{
+			printf("\n\nfeof of input file reached");
+			//do this until EOF char is reached
+			break;
+		}
+		
+		//get correspoding path from huffman table
+		strcpy(currPath, huffTable[(int)nextChar]);
+		
+		//if (DEBUG) printf("%s\n",currPath);
+		
+		n=0; //go to start of path
+		
+		//parse path and write to byte buffer
+		while(currPath[n] != '\0')
+		{		
+			digit = currPath[n];
+			
+			if(digit == '1')
+			{
+				//write a 1 to appropriate position within buffer
+				buffer = buffer | mask;   
+			}
+			else if(digit == '0')
+			{
+				//skip over bit (buffer init to 0's anyway)
+			}
+			 
+			mask = mask >> 1;
+			
+			printf("\nmask is %d",mask);
+			//when buffer is full, flush it to compressed file, reset counter and carry on
+			if(mask == 0)
+			{
+				printf("\nnow writing buffer to file...");
+				if((fwrite((void*)&buffer, sizeof(char), 1, fp2)) != 1)
+				{
+					fprintf(stderr,"ERROR! Bit buffer was not written to file!");
+				};
+			
+				buffer = 0x00;
+				mask = 0x80;
+			}
+			
+			n++;
+		} 
+		
+			
+
+	
+	}while(1);
+
+
+	//------write pseudo-eof char to file 
+	
+	//get pseudo-EOF path from huffman table
+	strcpy(currPath, huffTable[256]);
 	
 	//parse path and write to byte buffer
+	n =0;
+	while(currPath[n] != '\0')
+	{		
+		digit = currPath[n];
+		
+		if(digit == '1')
+		{
+			//write a 1 to appropriate position within buffer
+			buffer = buffer | mask;   
+		}
+		else if(digit == '0')
+		{
+			//skip over bit (buffer init to 0's anyway)
+		}
+		 
+		mask = mask >> 1;
+		
+		printf("\nmask is %d",mask);
+		//when buffer is full, flush it to compressed file, reset counter and carry on
+		if(mask == 0)
+		{
+			if((fwrite((void*)&buffer, sizeof(char), 1, fp2)) != 1)
+			{
+				fprintf(stderr,"ERROR! Bit buffer was not written to file!");
+			};
+		
+			buffer = 0x00;
+			mask = 0x80;
+		}
+		
+		n++;
+	} 	
 	
-	//when buffer is full, flush it to compressed file, reset counter and carry on
-	
-	//do this until EOF char is reached
-	
-	//write pseudo-eof char to file  
+	printf("\nmask is %d at the end",mask);
+	//write whatever is remaining in buffer to file
+	if(mask != 128)
+	{
+		if((fwrite((void*)&buffer, sizeof(char), 1, fp2)) != 1)
+		{
+			fprintf(stderr,"ERROR! Bit buffer was not written to file!");
+		};
+	 	
+ 	}
+ 	if (DEBUG) printf("Pseudo_EOF char wrote to file. Closing file...");
 	
 	//flush buffer and close file
 	fclose(fp2);
