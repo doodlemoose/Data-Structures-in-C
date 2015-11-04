@@ -244,7 +244,7 @@ int main(int argc, char** argv)
 			//--------------------------------------------------
 			if(DEBUG)
 			{
-				//printf("%c = %d \n",i, counts[i]);
+				printf("%x = %x \n",i, counts[i]);
 			}
 			//--------------------------------------------------
 			
@@ -362,11 +362,11 @@ int main(int argc, char** argv)
 	
 	FILE* fp2 = fopen("output.txt","wb+");
 	
-	/*-----print header - nonzero char-val pairs from character-counts table 
+	//-----print header - nonzero char-val pairs from character-counts table 
 	//first 4 bytes (int) is the number of char-val pairs
-	//size of char-val pair = 4 bytes + 4bytes = 8ytes (char is stored as int)
-	//size of header = (4 + count*8) bytes
-	int headerSize = 4 + charCount*8;
+	//size of char-val pair = 1 byte + 4bytes = 5 bytes
+	//size of header = (4 + count*5) bytes
+	int headerSize = 4 + charCount*(int)(sizeof(char) + sizeof(int));
 	
 	printf("header Size is %d\n",headerSize);
 	//size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
@@ -375,13 +375,14 @@ int main(int argc, char** argv)
 		fprintf(stderr,"ERROR! Header was not written to file!");
 	}
 	
-	//store nonzero pairs from charCounts table
-	for(k = 0; k<257; k++)
+	char charIndex;
+	//store nonzero pairs from charCounts table (besides pseudo-eof) 
+	for(k = 0; k<255; k++)
 	{
 		if(counts[k] > 0)
 		{
-					
-			if((fwrite((void*)&k, sizeof(int), 1, fp2)) != 1)
+			charIndex = k;
+			if((fwrite((void*)&charIndex, sizeof(char), 1, fp2)) != 1)
 			{
 				fprintf(stderr,"ERROR! Char was not written to file!");
 			};
@@ -394,7 +395,7 @@ int main(int argc, char** argv)
 	
 	
 	
-	//-----------------------------------
+	/*-----------------------------------
 	//size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 	int testSize;
 	fseek(fp2, SEEK_SET, 0);
@@ -458,7 +459,7 @@ int main(int argc, char** argv)
 			 
 			mask = mask >> 1;
 			
-			printf("\nmask is %d",mask);
+			//printf("\nmask is %d",mask);
 			//when buffer is full, flush it to compressed file, reset counter and carry on
 			if(mask == 0)
 			{
@@ -504,7 +505,7 @@ int main(int argc, char** argv)
 		 
 		mask = mask >> 1;
 		
-		printf("\nmask is %d",mask);
+		//printf("\nmask is %d",mask);
 		//when buffer is full, flush it to compressed file, reset counter and carry on
 		if(mask == 0)
 		{
