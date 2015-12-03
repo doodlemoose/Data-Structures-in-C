@@ -9,15 +9,17 @@ typedef struct coordinates{
 
 struct listNode{
   int node;
+  int weight;
  	struct listNode* next;
 };
 
 typedef struct listNode listNode;
 
-listNode* createListNode(int nodeNum)
+listNode* createListNode(int nodeNum, int weight)
 {
 	listNode* tmp = (listNode*) malloc(sizeof(listNode));
 	tmp->node = nodeNum;
+	tmp->weight = weight;
 	tmp->next = NULL;
 	
 	return tmp;
@@ -46,7 +48,7 @@ int main(int argc,char** argv)
 	coordinates* cords = (coordinates*) malloc(vertices * sizeof(coordinates));
 	
 	
-	//-----------TEST THIS PART!!---------------------
+	//-----------Store coordinates from file in struct array!!---------------------
 	for(i= 0; i< vertices; i++)
 	{
 		if(feof (fp)) break;
@@ -57,49 +59,63 @@ int main(int argc,char** argv)
 		(cords + i)->y = tmpY; 
 	}
 	if(feof (fp)) return -1;
+	
+	//-----------Print Coordinates List----
+	printf("\nCoordinates List: \n");
+	for(i = 0;i <vertices; i++)
+	{
+		printf("%d: %d %d\n",i,(cords + i)->x,(cords + i)->y); 
+	}
+	
 	//------------------------------------------------
 	
 	
 	//----------Create adjacency list-----------------
 	
-	listNode* ajaList = (listNode*)malloc(vertices*sizeof(listNode)); 	
-	
-	//--------REMOVE THIS IF POSSIBLE--
+	//listNode* ajaList = (listNode*)malloc(vertices*sizeof(listNode)); 	
+	listNode* ajaList = (listNode*)calloc(vertices, sizeof(listNode)); //use calloc to init pointers to NULL
+	/*--------Remove this is possible? ..Need for print statement?--
 	for(i= 0; i< vertices; i++)
 	{
 		ajaList[i].node = i;
 		ajaList[i].next = NULL; //init pointers to NULL
 	}	
 	
-	//-----------------------------------------------
+	//-----------------------------------------------*/
 	
 	
 	//----------FILL adjacency list-----------------
 	
-	//create an array of pointers to listNode
+	//create an array of pointers to point to the last listNode of each vertex's adjacency list
+	//this way we dont have to iterate to the end of the list to add a node 
 	listNode** pointers = (listNode**)malloc(vertices*sizeof(listNode*)); 	
 	
-	//--------REMOVE IF POSSIBLE--
+	//init pointers to POINT TO the corresponding nodes in the adjacency list
 	for(i= 0; i< vertices; i++)
 	{
-		pointers[i]= &ajaList[i]; //init pointers to point the corresponding nodes in the adjacency list
+		pointers[i]= &ajaList[i]; //pointers[i] points to ajaList[i]
 	}	
 	
 	int A, B; //vertices of an edge
+	int x1,y1,x2,y2;
 	listNode* tmp;
 	
 	for(i= 0; i< edges; i++)
 	{
 		//assign A and B from file
-		fscanf(fp, "%d %d", &A, &B); //get number of vertices and edges
+		fscanf(fp, "%d %d", &A, &B); //get connection
 		
 		//printf("A = %d, B= %d\n",A,B);
 		//add connection to adjacency list of appropriate node
-		tmp = createListNode(B);
+		x1=(cords+B)->x;
+		x2=(cords+A)->x;
+		y1=(cords+B)->y;
+		y2=(cords+A)->y;
+		tmp = createListNode(B,euclidean(x1, y1, x2, y2));
 		pointers[A]->next = tmp;
 		pointers[A] = tmp;
 	
-		tmp = createListNode(A);
+		tmp = createListNode(A,euclidean(x1, y1, x2, y2));
 		pointers[B]->next = tmp;
 		pointers[B] = tmp;
 	}	
@@ -108,14 +124,14 @@ int main(int argc,char** argv)
   
   	
 	//--------PRINT OUT ADJACENCY LIST--
-	printf("\n");
+	printf("\nAdjacency List:\n");
 	for(i= 0; i< vertices; i++)
 	{
 		printf("%d: ",i);
 		tmp = ajaList[i].next;
 		while(tmp!= NULL)
 		{
-			printf("%d ",tmp->node);
+			printf("%d(%d)  ",tmp->node,tmp->weight);
 			tmp = tmp->next;
 		}
 		printf("\n");
