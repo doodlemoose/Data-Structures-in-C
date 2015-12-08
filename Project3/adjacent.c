@@ -31,6 +31,8 @@ int euclidean(int x1, int y1, int x2, int y2);
 
 void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, int* preceding);
 
+queryNode* createQueryNode(int node, queryNode* prev);
+
 int main(int argc,char** argv)
 {	
 	FILE* fp = fopen(argv[1],"r"); //declare file pointer, open input file
@@ -164,7 +166,7 @@ int main(int argc,char** argv)
 	//init min to dummy node
 	unsigned int min = vertices;
 
-
+/*
 			//--------PRINT OUT INIT WEIGHTS--
 	printf("\n\nInit Weights:\n");
 	for(i= 0; i< vertices; i++)
@@ -186,7 +188,7 @@ int main(int argc,char** argv)
 		printf("%d: %d",i,preceeding[i]);
 		printf("\n");
 	}
-		
+*/		
 	//---=-=-=-=-=-=-=-=-=-=------DIJKSTRA'S ALGORITHM-----------=-=-=-=-=-=-=-=-=-=-	
 
 	int j;
@@ -199,7 +201,7 @@ int main(int argc,char** argv)
 		visited[currentVertex] = 1;
 	
 	
-			//--------PRINT OUT WEIGHTS--
+		/*--------PRINT OUT WEIGHTS--
 		printf("\n\nUpdated Weights:\n");
 		for(i= 0; i< vertices; i++)
 		{
@@ -222,6 +224,7 @@ int main(int argc,char** argv)
 			printf("%d: %d",i,preceeding[i]);
 			printf("\n");
 		}
+		*/
 		
 		//--FINDMIN node---
 		for(i= 0; i< vertices; i++)
@@ -231,9 +234,9 @@ int main(int argc,char** argv)
 				if(!(visited[i])) min = i;
 			}
 		}	
-		printf("\nmin is %u, %u\n",min, ajaList[min].weight); //PRINT MIN
-		printf("-------------------------------------------\n\n");
-		
+		//printf("\nmin is %u, %u\n",min, ajaList[min].weight); //PRINT MIN
+		//printf("-------------------------------------------\n\n");
+
 		//UPDATE CURRENT VERTEX
 		currentVertex = min;
 		
@@ -245,18 +248,22 @@ int main(int argc,char** argv)
 	
 	//--------------------------Now for queries--------------------------------
 
-	int query = 4;
-	int prev = -1;
+	int query = 6;
+	int prev = query;
 	
-	queryNode* queryPtr,start,tmp;
+	queryNode* queryPtr, *start;
+
+
+	//first display distance
+	printf("\n%u\n",ajaList[prev].weight);
 	
-	//init first node
-	start = (queryNode*)malloc(sizeof(queryNode));
+	//----NOW DISPLAY SHORTEST PATH----------- 
 	
-	
-	//display distance
-	printf("\n%u",ajaList[query].weight);
-	
+	//FILL QUERYNODE ARRAY
+	//init first node (start at the last node in path)
+	start = createQueryNode(prev, NULL);
+	queryPtr = start;
+
 	//error check 
 	if(query == rootVertex)
 	{
@@ -265,19 +272,29 @@ int main(int argc,char** argv)
 	else
 	{
 		do 
-		{
-			tmp = (malloc
-			prev = preceeding[query];
-			queryNode
+		{ 
+			//update prev
+			prev = preceeding[prev];	
+			//printf("\nprev = %d",prev);
 			
-			queryPtr = tmp; 
+			//add node to list containing previous item in query path
+			queryPtr->next = createQueryNode(prev, queryPtr);
 			
-		}while(prev != rootVertex);
+			
+			//update pointer (move to next node in list)...
+			queryPtr = queryPtr->next; 
+			
+		}while(prev != rootVertex); //till we get to the root node (first node in the path)
 	}
 	
+	//PRINT PATH IN REVERSE
+	while(queryPtr != NULL)
+	{
+		printf("%d ",queryPtr->node);
+		queryPtr = queryPtr->prev;
+	}
 	
-	
-	
+	printf("\n");
 	
 	
 	//-------------------------------------------------------------------------------
@@ -340,7 +357,6 @@ void initWeights(listNode* ajaList, int vertices, int root)
 	}
 }
 
-//Part 1 of my iterative implementation of Dijkstra's shortest path algorithm
 //This function looks at all neighbours of a vertex and checks for shorter paths to them 
 void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, int* preceding)
 {
@@ -351,18 +367,16 @@ void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, in
 	
 	while(ajaPtr !=NULL)
 	{
-		printf("\n Iter");
 		
 		if(!(done[ajaPtr->node])) //Ignore nodes already visted 
 		{
 			newWeight = ajaPtr->weight;
 			oldWeight = ajaList[ajaPtr->node].weight;
 		
-			printf("\noldweight:%u  , newweight:%u",oldWeight,newWeight);
+			//printf("\noldweight:%u  , newweight:%u",oldWeight,newWeight);
 		
 			if((rootWeight + newWeight) < (oldWeight)) //if shorter path is found
 			{
-				printf("iter");
 				ajaList[ajaPtr->node].weight = rootWeight + newWeight; //update path length
 				
 				preceding[ajaPtr->node] = currentVertex; //update preceding node
@@ -371,3 +385,17 @@ void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, in
 		ajaPtr = ajaPtr->next; //update ajacency list pointer	
 	} 
 }
+
+queryNode* createQueryNode(int node, queryNode* prev)
+{
+	//alocate space on stack
+	queryNode* tmp = (queryNode*)malloc(sizeof(queryNode));
+	
+	tmp->node = node;
+	tmp->prev = prev;
+	tmp->next = NULL;
+	
+	//printf("createqueryNode");
+	return tmp; 
+}
+
