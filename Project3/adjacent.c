@@ -1,6 +1,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
+clock_t t;
+
 
 typedef struct coordinates{
   int x;
@@ -33,16 +37,22 @@ void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, in
 
 queryNode* createQueryNode(int node, queryNode* prev);
 
-int main(int argc,char** argv)
-{	
-	FILE* fp = fopen(argv[1],"r"); //declare file pointer, open input file
+void deleteQueryList(queryNode* head);
 
+int main(int argc,char** argv)
+{
+	//------------PARSE INPUT FILE------------------
+	
+	FILE* fp = fopen(argv[1],"r"); //declare file pointer, open input file
+	FILE* fp2 = fopen(argv[2],"r"); //declare file pointer, open query file
+
+	//local variables for this section 
 	int vertices, edges,tmpX,tmpY,tmpUnused,i;
 	
 	fscanf(fp, "%d %d", &vertices, &edges); //get number of vertices and edges
 	if(feof (fp)) return -1;
 	
-	printf("\nNumber of vertices are %d, number of edges are %d\n",vertices, edges);
+	//printf("\nNumber of vertices are %d, number of edges are %d\n",vertices, edges);
 	
 	coordinates* cords = (coordinates*) malloc(vertices * sizeof(coordinates));
 	
@@ -59,32 +69,18 @@ int main(int argc,char** argv)
 	}
 	if(feof (fp)) return -1;
 	
-	/*-----------Print Coordinates List----
-	printf("\nCoordinates List: \n");
-	for(i = 0;i <vertices; i++)
-	{
-		printf("%d: %d %d\n",i,(cords + i)->x,(cords + i)->y); 
-	}
-	
-	//------------------------------------------------*/
-	
-	
+  
+
 	//----------Create adjacency list-----------------
 	
-	//listNode* ajaList = (listNode*)malloc(vertices*sizeof(listNode)); 	
+	//Local variable for this section
+	int A, B; //vertices of an edge
+	int x1,y1,x2,y2; //cords
+	listNode* tmp;
+	
 	
 	//ajaList[vertices+1] is a dummy node used later 
 	listNode* ajaList = (listNode*)calloc(vertices+1, sizeof(listNode)); //use calloc to init pointers to NULL
-	
-	/*--------Remove this is possible? ..Need for print statement?--
-	for(i= 0; i< vertices; i++)
-	{
-		ajaList[i].node = i;
-		ajaList[i].next = NULL; //init pointers to NULL
-	}	
-	
-	//-----------------------------------------------*/
-	
 	
 	//----------FILL adjacency list-----------------
 	
@@ -97,17 +93,12 @@ int main(int argc,char** argv)
 	{
 		pointers[i]= &ajaList[i]; //pointers[i] points to ajaList[i]
 	}	
-	
-	int A, B; //vertices of an edge
-	int x1,y1,x2,y2;
-	listNode* tmp;
-	
+		
 	for(i= 0; i< edges; i++)
 	{
 		//assign A and B from file
 		fscanf(fp, "%d %d", &A, &B); //get connection
-		
-		//printf("A = %d, B= %d\n",A,B);
+
 		//add connection to adjacency list of appropriate node
 		x1=(cords+B)->x;
 		x2=(cords+A)->x;
@@ -122,10 +113,9 @@ int main(int argc,char** argv)
 		pointers[B] = tmp;
 	}	
   //----------------------------------------
-  
-  
+
   	
-	//--------PRINT OUT ADJACENCY LIST--
+	/*--------PRINT OUT ADJACENCY LIST--
 	printf("\nAdjacency List:\n");
 	for(i= 0; i< vertices; i++)
 	{
@@ -138,176 +128,160 @@ int main(int argc,char** argv)
 		}
 		printf("\n");
 	}	
+	*/
 
 	//--------------------------------MILESTONE 2 COMPLETE------------------------------
 	
-	
-	int rootVertex = 0;
-	int currentVertex = rootVertex;
-		//------create/init 'visited' array on heap
-	unsigned char* visited = (unsigned char*)calloc(vertices, sizeof(unsigned char)); //use calloc to init to zeros(not visited)
-	
-	//------create/init 'PRECEEDING' array on heap
-	int* preceeding = (int*)malloc(vertices*sizeof(int)); 
-	
-	for(i=0;i<vertices; i++)
-	{
-		preceeding[i] = -1;
-	}
-	
-	//----INIT WEIGHTS
-	initWeights(ajaList, vertices, rootVertex);
-
-	//init 'dummy' node in adjacency list
-	ajaList[vertices].node = vertices;
-	ajaList[vertices].weight = -1;
-	ajaList[vertices].next = NULL;
-	
-	//init min to dummy node
-	unsigned int min = vertices;
-
-/*
-			//--------PRINT OUT INIT WEIGHTS--
-	printf("\n\nInit Weights:\n");
-	for(i= 0; i< vertices; i++)
-	{
-		printf("%d(%u)\n",i,ajaList[i].weight);
-	}	
-	
-		//--------PRINT OUT INIT VISITED--
-	printf("\n\nInit Visited :\n");
-	for(i= 0; i< vertices; i++)
-	{
-		printf("%d(%u)\n",i,visited[i]);
-	}	
+	//local variables for this section 
+	int* preceeding; //data structure used to help print the shortest path 
+	int numQueries; //number of queries in query file
+	unsigned char* visited; //data structure used to keep track of visited nodes
+	int k,j; //loop counters
+	int rootVertex, currentVertex; //used for to keep track of vertices when using Dijkstra's algorithm 
+	unsigned int min; //minimum distance of all unvisited vertices
+	int query,prev; //used to print out shortest path 
+	queryNode* queryPtr, *start; //used to make a linked list of the nodes in a shortest path  
 		
-	//--------PRINT OUT PRECEEDING--
-	printf("\n\nInit Preceeding:\n");
-	for(i=0;i<vertices; i++)
+	//get number of queries from file (so we know how many times to run the following loop
+	if((fscanf(fp2,"%d",&numQueries)) == 0) { fprintf(stderr,"ERROR! COULD NOT READ NUMQUERIES FROM FILE"); return 0;}
+	
+	//printf("\n Numqueries is %d\n", numQueries);
+	
+	
+	//------declare 'PRECEEDING' array on heap
+	preceeding = (int*)malloc(vertices*sizeof(int)); 
+	
+	//------declare 'visited' array on heap
+	visited = (unsigned char*)malloc(vertices*sizeof(unsigned char)); 
+	
+	//start loop
+	for(k=0; k<numQueries; k++)
 	{
-		printf("%d: %d",i,preceeding[i]);
-		printf("\n");
-	}
-*/		
-	//---=-=-=-=-=-=-=-=-=-=------DIJKSTRA'S ALGORITHM-----------=-=-=-=-=-=-=-=-=-=-	
+	
+		//get SOURCE vertex from query file
+		if((fscanf(fp2,"%d",&rootVertex)) == 0) { fprintf(stderr,"ERROR! COULD NOT READ QUERY FROM FILE"); return 0;}
+		//printf("\n RootVertex is %d\n", rootVertex);
 
-	int j;
-	for(j =0;j<vertices ; j++)
-	{			
-		//update weights of neighbours of current vertex
-		updateWeights(ajaList, currentVertex, visited, preceeding);
 	
-		//Mark current vertex as 'visited'
-		visited[currentVertex] = 1;
+		//start at the source vertex 
+		currentVertex = rootVertex;
 	
-	
-		/*--------PRINT OUT WEIGHTS--
-		printf("\n\nUpdated Weights:\n");
-		for(i= 0; i< vertices; i++)
-		{
-			printf("%d(%u)",i,ajaList[i].weight);
-			if(visited[i])printf("*");
-			printf("\n");
-		}	
-		
-		//--------PRINT OUT VISITED--
-		printf("\n\nUpdated Visited :\n");
-		for(i= 0; i< vertices; i++)
-		{
-			printf("%d(%u)\n",i,visited[i]);
-		}	
-		
-		//--------PRINT OUT PRECEEDING--
-		printf("\n\nUpdated Preceeding:\n");
+
+		//init preceeding & visited arrays
 		for(i=0;i<vertices; i++)
 		{
-			printf("%d: %d",i,preceeding[i]);
-			printf("\n");
+			preceeding[i] = -1;
+			visited[i] = 0;
 		}
-		*/
-		
-		//--FINDMIN node---
-		for(i= 0; i< vertices; i++)
-		{
-			if(ajaList[i].weight < ajaList[min].weight)
-			{
-				if(!(visited[i])) min = i;
-			}
-		}	
-		//printf("\nmin is %u, %u\n",min, ajaList[min].weight); //PRINT MIN
-		//printf("-------------------------------------------\n\n");
 
-		//UPDATE CURRENT VERTEX
-		currentVertex = min;
-		
-		//Re-init Min
+	
+		//----INIT WEIGHTS
+		initWeights(ajaList, vertices, rootVertex);
+
+		//init 'dummy' node in adjacency list
+		ajaList[vertices].node = vertices;
+		ajaList[vertices].weight = -1;
+		ajaList[vertices].next = NULL;
+	
+		//init min to dummy node
 		min = vertices;
-	}
-	//--------=-=-=-=-=-=-=-=-=-=-=-=-------------------------=-=-=-=-=-=-=-=----------	
-	
-	
-	//--------------------------Now for queries--------------------------------
 
-	int query = 6;
-	int prev = query;
-	
-	queryNode* queryPtr, *start;
+  	t = clock(); //start timer
+  		
+		//---=-=-=-=-=-=-=-=-=-=------DIJKSTRA'S ALGORITHM-----------=-=-=-=-=-=-=-=-=-=-	
 
-
-	//first display distance
-	printf("\n%u\n",ajaList[prev].weight);
+		for(j =0;j<vertices ; j++)
+		{			
+			//update weights of neighbours of current vertex
+			updateWeights(ajaList, currentVertex, visited, preceeding);
 	
-	//----NOW DISPLAY SHORTEST PATH----------- 
-	
-	//FILL QUERYNODE ARRAY
-	//init first node (start at the last node in path)
-	start = createQueryNode(prev, NULL);
-	queryPtr = start;
+			//Mark current vertex as 'visited'
+			visited[currentVertex] = 1;
 
-	//error check 
-	if(query == rootVertex)
-	{
-		printf("\n%d",query);
-	}
-	else
-	{
-		do 
-		{ 
-			//update prev
-			prev = preceeding[prev];	
-			//printf("\nprev = %d",prev);
 			
-			//add node to list containing previous item in query path
-			queryPtr->next = createQueryNode(prev, queryPtr);
+			//--FINDMIN node---
+			for(i= 0; i< vertices; i++)
+			{
+				if(ajaList[i].weight < ajaList[min].weight)
+				{
+					if(!(visited[i])) min = i;
+				}
+			}	
 			
-			
-			//update pointer (move to next node in list)...
-			queryPtr = queryPtr->next; 
-			
-		}while(prev != rootVertex); //till we get to the root node (first node in the path)
-	}
-	
-	//PRINT PATH IN REVERSE
-	while(queryPtr != NULL)
-	{
-		printf("%d ",queryPtr->node);
-		queryPtr = queryPtr->prev;
-	}
-	
-	printf("\n");
-	
-	
-	//-------------------------------------------------------------------------------
 
+			//UPDATE CURRENT VERTEX
+			currentVertex = min;
+		
+			//Re-init Min
+			min = vertices;
+		}
+		//--------=-=-=-=-=-=-=-=-=-=-=-=-------------------------=-=-=-=-=-=-=-=----------	
+    t = clock() - t;
+    double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
+		printf("Time taken : %lf seconds\n",time_taken); 
+
+	
+		//--------------------------Now for queries--------------------------------
+
+		//get DEST vertex from query file 
+		if((fscanf(fp2,"%d",&query)) == 0) fprintf(stderr,"ERROR! COULD NOT READ QUERY FROM FILE");
+		//printf("\n Query is %d\n", query);
+	
+		//last vertex in path is the DEST vertex	
+		prev = query;
+	
+		//first display distance
+		printf("%u\n",ajaList[prev].weight);
+	
+		//----NOW DISPLAY SHORTEST PATH----------- 
+	
+		//FILL QUERYNODE ARRAY
+		//init first node (start at the last node in path)
+		start = createQueryNode(prev, NULL);
+		queryPtr = start;
+
+		//error check 
+		if(query == rootVertex)
+		{
+			printf("%d\n",query);
+		}
+		else
+		{
+			do 
+			{ 
+				//update prev
+				prev = preceeding[prev];	
+				//printf("\nprev = %d",prev);
+			
+				//add node to list containing previous item in query path
+				queryPtr->next = createQueryNode(prev, queryPtr);
+			
+				//update pointer (move to next node in list)...
+				queryPtr = queryPtr->next; 
+			
+			}while(prev != rootVertex); //till we get to the root node (first node in the path)
+		}
+	
+		//PRINT PATH IN REVERSE
+		while(queryPtr != NULL)
+		{
+			printf("%d ",queryPtr->node);
+			queryPtr = queryPtr->prev;
+		}
+	
+		printf("\n");
+	
+		//delete list and free memory 
+		deleteQueryList(start);
+	}
 	
 
 	
 	fclose(fp);
+	fclose(fp2);
 
 	return 0;
 }//END OF MAIN
-
-
 
 
 
@@ -320,7 +294,7 @@ int euclidean(int x1, int y1, int x2, int y2)
   return (int)distance;
 }
 
-
+//creates and inits a node in the ajacency list data structure 
 listNode* createListNode(int nodeNum, unsigned int weight)
 {
 	listNode* tmp = (listNode*) malloc(sizeof(listNode));
@@ -331,22 +305,8 @@ listNode* createListNode(int nodeNum, unsigned int weight)
 	return tmp;
 }
 
-/*
-void initMinPaths(minPath* minPaths, int numVertices, int rootVertex)
-{
-	int i;
-	for(i= 0; i<numVertices; i++)
-	{
-		minPaths[i].vertex = i;
-		minPaths[i].done = 0;
-		
-		if(i == rootVertex) minPaths[i].weight = 0;		
-		else minPaths[i].weight = -1;
-	}
-}
-*/
-
-//This function initializes the ajacency list to prep for Dijkstra's shortest path algorithm from vertex 'root' (weight of root = 0, all other vertices = inf )
+//This function initializes the weights of all the vertices (first part of Dijkstra's algorithm
+//The SOURCE vertex's weight is 0 and all others are infinity
 void initWeights(listNode* ajaList, int vertices, int root)
 {
 	int i;
@@ -397,5 +357,22 @@ queryNode* createQueryNode(int node, queryNode* prev)
 	
 	//printf("createqueryNode");
 	return tmp; 
+}
+
+void deleteQueryList(queryNode* head)
+{
+	queryNode* curr = head, *next;
+	
+	while(curr!=NULL)
+	{
+		//save pointer to next node
+		next = curr->next;
+		
+		//delete current node
+		free(curr);
+		
+		//update current node
+		curr = next;
+	}
 }
 
