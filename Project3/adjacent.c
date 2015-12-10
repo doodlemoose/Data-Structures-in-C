@@ -3,8 +3,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-clock_t t;
+#define MAX_PQ_SIZE 100000
 
+clock_t t;
 
 typedef struct coordinates{
   int x;
@@ -27,6 +28,23 @@ struct queryNode{
 
 typedef struct queryNode queryNode;
 
+struct PQ{
+	int size;
+	listNode** heap;
+};
+
+typedef struct PQ PQ;
+
+//declare global priority queue
+PQ pQueue;
+
+void initPQ();
+void enqueue(listNode* item);
+listNode* dequeue();
+void buildHeap();
+void downHeap(int i, int n);
+void showHeap();
+
 void initWeights(listNode* ajaList, int vertices, int root);
 
 listNode* createListNode(int nodeNum, unsigned int weight);
@@ -39,8 +57,11 @@ queryNode* createQueryNode(int node, queryNode* prev);
 
 void deleteQueryList(queryNode* head);
 
+void resetPQ();
+
 int main(int argc,char** argv)
 {
+	
 	//------------PARSE INPUT FILE------------------
 	
 	FILE* fp = fopen(argv[1],"r"); //declare file pointer, open input file
@@ -82,6 +103,13 @@ int main(int argc,char** argv)
 	//ajaList[vertices+1] is a dummy node used later 
 	listNode* ajaList = (listNode*)calloc(vertices+1, sizeof(listNode)); //use calloc to init pointers to NULL
 	
+	//init pointers adjacency list
+	for(i= 0; i< vertices; i++)
+	{
+		ajaList[i].node = i; 
+	}	
+	
+	
 	//----------FILL adjacency list-----------------
 	
 	//create an array of pointers to point to the last listNode of each vertex's adjacency list
@@ -115,20 +143,24 @@ int main(int argc,char** argv)
   //----------------------------------------
 
   	
-	/*--------PRINT OUT ADJACENCY LIST--
+	//--------PRINT OUT ADJACENCY LIST--
 	printf("\nAdjacency List:\n");
+	int count;
 	for(i= 0; i< vertices; i++)
 	{
-		printf("%d: ",i);
+		//printf("%d: ",i);
 		tmp = ajaList[i].next;
+		count = 0;
 		while(tmp!= NULL)
 		{
-			printf("%d(%u)  ",tmp->node,tmp->weight);
+			//printf("%d(%u)  ",tmp->node,tmp->weight);
 			tmp = tmp->next;
+			count++;
 		}
-		printf("\n");
+		if(count==0) printf("Unused:%d\n",i);
+		//printf("\n");
 	}	
-	*/
+	
 
 	//--------------------------------MILESTONE 2 COMPLETE------------------------------
 	
@@ -154,15 +186,16 @@ int main(int argc,char** argv)
 	//------declare 'visited' array on heap
 	visited = (unsigned char*)malloc(vertices*sizeof(unsigned char)); 
 	
+	//init prority queue
+	initPQ();
+	
 	//start loop
 	for(k=0; k<numQueries; k++)
 	{
 	
 		//get SOURCE vertex from query file
 		if((fscanf(fp2,"%d",&rootVertex)) == 0) { fprintf(stderr,"ERROR! COULD NOT READ QUERY FROM FILE"); return 0;}
-		//printf("\n RootVertex is %d\n", rootVertex);
 
-	
 		//start at the source vertex 
 		currentVertex = rootVertex;
 	
@@ -174,7 +207,6 @@ int main(int argc,char** argv)
 			visited[i] = 0;
 		}
 
-	
 		//----INIT WEIGHTS
 		initWeights(ajaList, vertices, rootVertex);
 
@@ -190,24 +222,17 @@ int main(int argc,char** argv)
   		
 		//---=-=-=-=-=-=-=-=-=-=------DIJKSTRA'S ALGORITHM-----------=-=-=-=-=-=-=-=-=-=-	
 
-		for(j =0;j<vertices ; j++)
+		for(j =0;j<vertices-1 ; j++)
 		{			
 			//update weights of neighbours of current vertex
 			updateWeights(ajaList, currentVertex, visited, preceeding);
 	
 			//Mark current vertex as 'visited'
 			visited[currentVertex] = 1;
-
 			
-			//--FINDMIN node---
-			for(i= 0; i< vertices; i++)
-			{
-				if(ajaList[i].weight < ajaList[min].weight)
-				{
-					if(!(visited[i])) min = i;
-				}
-			}	
-			
+			buildHeap();
+			if(pQueue.size == 0) break;
+			min = dequeue()->node;
 
 			//UPDATE CURRENT VERTEX
 			currentVertex = min;
@@ -217,16 +242,15 @@ int main(int argc,char** argv)
 		}
 		//--------=-=-=-=-=-=-=-=-=-=-=-=-------------------------=-=-=-=-=-=-=-=----------	
     t = clock() - t;
-    double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
-		printf("Time taken : %lf seconds\n",time_taken); 
+    //double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
+		//printf("Time taken : %lf seconds\n",time_taken); 
 
 	
 		//--------------------------Now for queries--------------------------------
 
 		//get DEST vertex from query file 
 		if((fscanf(fp2,"%d",&query)) == 0) fprintf(stderr,"ERROR! COULD NOT READ QUERY FROM FILE");
-		//printf("\n Query is %d\n", query);
-	
+
 		//last vertex in path is the DEST vertex	
 		prev = query;
 	
@@ -243,7 +267,7 @@ int main(int argc,char** argv)
 		//error check 
 		if(query == rootVertex)
 		{
-			printf("%d\n",query);
+			//printf("%d\n",query);
 		}
 		else
 		{
@@ -251,8 +275,7 @@ int main(int argc,char** argv)
 			{ 
 				//update prev
 				prev = preceeding[prev];	
-				//printf("\nprev = %d",prev);
-			
+
 				//add node to list containing previous item in query path
 				queryPtr->next = createQueryNode(prev, queryPtr);
 			
@@ -273,6 +296,8 @@ int main(int argc,char** argv)
 	
 		//delete list and free memory 
 		deleteQueryList(start);
+		
+		resetPQ();
 	}
 	
 
@@ -323,7 +348,7 @@ void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, in
 	listNode* ajaPtr = ajaList[currentVertex].next; //init to first neighbour
 	unsigned int rootWeight = ajaList[currentVertex].weight; //save weight of current Vertex
 	
-	unsigned int newWeight, oldWeight;
+	unsigned int newWeight, oldWeight, inf = -1; 
 	
 	while(ajaPtr !=NULL)
 	{
@@ -332,11 +357,14 @@ void updateWeights(listNode* ajaList, int currentVertex, unsigned char* done, in
 		{
 			newWeight = ajaPtr->weight;
 			oldWeight = ajaList[ajaPtr->node].weight;
-		
-			//printf("\noldweight:%u  , newweight:%u",oldWeight,newWeight);
-		
+			
 			if((rootWeight + newWeight) < (oldWeight)) //if shorter path is found
 			{
+				if(oldWeight == inf)
+				{
+					enqueue(&ajaList[ajaPtr->node]); //add to PQ
+				}
+				
 				ajaList[ajaPtr->node].weight = rootWeight + newWeight; //update path length
 				
 				preceding[ajaPtr->node] = currentVertex; //update preceding node
@@ -355,7 +383,6 @@ queryNode* createQueryNode(int node, queryNode* prev)
 	tmp->prev = prev;
 	tmp->next = NULL;
 	
-	//printf("createqueryNode");
 	return tmp; 
 }
 
@@ -374,5 +401,98 @@ void deleteQueryList(queryNode* head)
 		//update current node
 		curr = next;
 	}
+}
+
+
+void showHeap()
+{
+	int i = 0;
+	printf("\n");
+	printf("PQsize: %d\n",pQueue.size);
+	for(i = 0; i<pQueue.size; i++)
+	{
+		printf("%d(%u)  ", pQueue.heap[i]->node, pQueue.heap[i]->weight);
+	}
+	printf("\n\n");
+
+}
+
+void downHeap(int i, int n)
+{
+	listNode* tmp = pQueue.heap[i-1];
+	int j;
+	
+	while((i-1) < (n/2)) //not a leaf
+	{
+		j = 2*i; //rightchild
+		if((j < n) && (pQueue.heap[j-1]->weight > pQueue.heap[j]->weight)) //find min child
+			j++;
+		if(tmp->weight <= pQueue.heap[j-1]->weight)
+			break;
+		else
+		{
+			pQueue.heap[i-1] = pQueue.heap[j-1];
+			i = j;
+		} 
+	}
+	
+	pQueue.heap[i-1] = tmp;
+}
+
+
+
+
+
+void buildHeap()
+{
+	int i;
+	int n = pQueue.size;
+	
+	for( i = n/2; i > 0; i--)
+	{
+		downHeap(i,n);
+	}
+}
+
+
+listNode* dequeue()
+{	
+	//error check
+	if(pQueue.size == 0)
+	{
+		fprintf(stderr,"ERROR! cannot dequeue because pQueue is empty!");
+		return NULL;
+	}
+	listNode* tmp = pQueue.heap[0];
+	pQueue.heap[0] = pQueue.heap[pQueue.size-1];
+
+	pQueue.size = pQueue.size - 1;
+	return tmp;
+}
+
+
+void enqueue(listNode* item)
+{
+	//error check - abort if pQueue is full
+	if(pQueue.size == MAX_PQ_SIZE)
+	{
+		fprintf(stderr,"ERROR! Cannot enqueue beacuse priority queue is full!");
+		return;
+	}
+	pQueue.heap[pQueue.size] = item;
+	pQueue.size = pQueue.size + 1;	
+}
+
+void initPQ()
+{
+	//init global PQ
+	pQueue.size = 0;
+	pQueue.heap = (listNode**)malloc(MAX_PQ_SIZE*sizeof(listNode*));
+}
+
+void resetPQ()
+{
+	//init global PQ
+	pQueue.size = 0;
 }
 
